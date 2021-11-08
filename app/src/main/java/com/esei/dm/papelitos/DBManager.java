@@ -24,7 +24,7 @@ public class DBManager extends SQLiteOpenHelper {
 
     /*Campos tabla PUNTUACION*/
     public static String EQUIPO_id_fk = "id_equipo";
-    public static int puntuacion = 0;
+    public static String puntuacion = "punt";
 
     public DBManager(Context context){
         super(context, db_name, null, db_version);
@@ -37,12 +37,13 @@ public class DBManager extends SQLiteOpenHelper {
         try{
             db.beginTransaction();
             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_jugador + "("
-                    + JUGADOR_id + " INTEGER PRIMARY KEY,"
+                    + JUGADOR_id + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + JUGADOR_nombre + " TEXT NOT NULL"
                     + ")"
             );
-        }catch (SQLException e){
-            Log.e("DBManager.onCreate", "Creando "+tabla_jugador+": "+e.getMessage());
+            db.setTransactionSuccessful();
+        }catch (SQLException exec){
+            Log.e("DBManager.onCreate", "Creando "+tabla_jugador+": "+exec.getMessage());
         }finally {
             db.endTransaction();
         }
@@ -51,14 +52,14 @@ public class DBManager extends SQLiteOpenHelper {
          try{
              db.beginTransaction();
              db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_equipo + "("
-                     + EQUIPO_id + " INTEGER NOT NULL,"
-                     + JUGADOR_id_fk  + " INTEGER NOT NULL,"
+                     + EQUIPO_id + " INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
                      + EQUIPO_nombre + " TEXT NOT NULL,"
-                     + "PRIMARY KEY (EQUIPO_id,JUGADOR_id_fk)"
+                     + JUGADOR_id_fk +" INTEGER NOT NULL , FOREIGN KEY ("+JUGADOR_id_fk+") REFERENCES " + tabla_jugador + "("+JUGADOR_id+")"
                      + ")"
              );
-         }catch (SQLException e){
-             Log.e("DBManager.onCreate", "Creando "+tabla_equipo+": "+e.getMessage());
+             db.setTransactionSuccessful();
+         }catch (SQLException exec){
+             Log.e("DBManager.onCreate", "Creando "+tabla_equipo+": "+exec.getMessage());
          }finally {
              db.endTransaction();
          }
@@ -66,19 +67,31 @@ public class DBManager extends SQLiteOpenHelper {
          /*Creacion tabla Puntuacion*/
          try{
              db.beginTransaction();
-             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_equipo + "("
-                     + EQUIPO_id + " INTEGER NOT NULL,"
-                     + JUGADOR_id_fk  + " INTEGER NOT NULL,"
-                     + EQUIPO_nombre + " TEXT NOT NULL,"
-                     + "PRIMARY KEY (EQUIPO_id,JUGADOR_id_fk)"
+             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_puntuacion + "("
+                     + puntuacion + " INTEGER NOT NULL,"
+                     + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+")"
                      + ")"
              );
-         }catch (SQLException e){
-             Log.e("DBManager.onCreate", "Creando "+tabla_equipo+": "+e.getMessage());
+             db.setTransactionSuccessful();
+         }catch (SQLException exec){
+             Log.e("DBManager.onCreate", "Creando "+tabla_puntuacion+": "+exec.getMessage());
          }finally {
              db.endTransaction();
          }
      }
+
+    public void onUpgrade(SQLiteDatabase db, int v1, int v2){
+        Log.i("DBManager", "DB: "+db_name+":v "+v1+ " -> "+v2);
+        try{
+            db.beginTransaction();
+            db.execSQL("DROP TABLE IF EXISTS " + tabla_jugador);
+            db.setTransactionSuccessful();
+        }catch(SQLException exec){
+            Log.e("DBManager.onUpgrade", exec.getMessage());
+        }finally {
+            db.endTransaction();
+        }
+    }
 
 
 }
