@@ -1,6 +1,8 @@
 package com.esei.dm.papelitos;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -91,6 +93,76 @@ public class DBManager extends SQLiteOpenHelper {
         }finally {
             db.endTransaction();
         }
+    }
+
+    public boolean insertarJugador(String nombre){ //registrar jugador
+        boolean toret = false;
+        Cursor cursor = null;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(JUGADOR_nombre, nombre);
+
+        try{
+            db.beginTransaction();
+            cursor = db.query(tabla_jugador, null, JUGADOR_nombre + "=?", new String[]{nombre}, null, null, null, null); //Se busca si existe ya ese jugador
+            if(cursor.getCount() > 0){
+                db.update(tabla_jugador, values, JUGADOR_nombre + "=?", new String[]{nombre}); //Si existe, se actualiza el registro en vez de insertar
+            }
+            else{
+                db.insert(tabla_jugador, null, values); // Si no existe, se inserta simplemente
+            }
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.insertarJugador", exc.getMessage());
+        }
+        finally {
+            if(cursor != null){
+                cursor.close();
+            }
+            db.endTransaction();
+        }
+        return toret;
+    }
+
+    public boolean insertarEquipo(String nombre_equipo){
+        boolean toret = false;
+        Cursor cursor = null;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values =  new ContentValues();
+
+        values.put(EQUIPO_nombre, nombre_equipo);
+
+        try{
+            db.beginTransaction();
+            cursor = db.query(tabla_equipo, null, EQUIPO_nombre + "=?", new String[]{nombre_equipo}, null, null, null, null);
+            if(cursor.getCount() > 0){
+                db.update(tabla_equipo, values, EQUIPO_nombre + "=?", new String[]{nombre_equipo});
+            }
+            else{
+                db.insert(tabla_equipo, null, values);
+            }
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch (SQLException exc){
+            Log.e("DBManager.insertarEquipo", exc.getMessage());
+        }
+        finally {
+            if(cursor != null){
+                cursor.close();
+            }
+            db.endTransaction();
+        }
+        return toret;
+    }
+
+    public boolean asignarJugador_Equipo(String nombre, String nombre_equipo){
+        boolean toret = false;
+        Cursor cursor = null;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        return toret;
     }
 
 
