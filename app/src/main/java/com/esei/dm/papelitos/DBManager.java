@@ -35,6 +35,8 @@ public class DBManager extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db){
         Log.i("DBManager", "Creando BBDD "+db_name+" v"+db_version);
 
+        db.setForeignKeyConstraintsEnabled(true);
+
         /*Creacion tabla Jugador*/
         try{
             db.beginTransaction();
@@ -56,7 +58,7 @@ public class DBManager extends SQLiteOpenHelper {
             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_equipo + "("
                     + EQUIPO_id + " INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
                     + EQUIPO_nombre + " TEXT NOT NULL,"
-                    + JUGADOR_id_fk +" INTEGER NOT NULL , FOREIGN KEY ("+JUGADOR_id_fk+") REFERENCES " + tabla_jugador + "("+JUGADOR_id+")"
+                    + JUGADOR_id_fk +" INTEGER NOT NULL , FOREIGN KEY ("+JUGADOR_id_fk+") REFERENCES " + tabla_jugador + "("+JUGADOR_id+") ON DELETE CASCADE"
                     + ")"
             );
             db.setTransactionSuccessful();
@@ -71,7 +73,7 @@ public class DBManager extends SQLiteOpenHelper {
             db.beginTransaction();
             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_puntuacion + "("
                     + puntuacion + " INTEGER NOT NULL DEFAULT 0,"
-                    + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+")"
+                    + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+") ON DELETE CASCADE"
                     + ")"
             );
             db.setTransactionSuccessful();
@@ -174,6 +176,22 @@ public class DBManager extends SQLiteOpenHelper {
         return toret;
     }
 
+    public boolean eliminarEquipo(String id_equipo){
+        boolean toret = false;
+        SQLiteDatabase db = this.getWritableDatabase();
+        try{
+            db.beginTransaction();
+            db.delete(tabla_equipo, EQUIPO_id + "=?", new String[]{id_equipo});
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.eliminarEquipo", exc.getMessage());
+        }finally {
+            db.endTransaction();
+        }
+        return toret;
+    }
+
 
     public boolean asignarJugador_Equipo(String id_jugador, String id_equipo){/*jugador X -> Y equipo*/
         boolean toret = false;
@@ -203,6 +221,22 @@ public class DBManager extends SQLiteOpenHelper {
             if(cursor != null){
                 cursor.close();
             }
+            db.endTransaction();
+        }
+        return toret;
+    }
+
+    public boolean eliminarAsignacionJugador_Equipo(String id_jugador, String id_equipo){
+        boolean toret = false;
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.beginTransaction();
+            db.delete(tabla_equipo, EQUIPO_id + "=? AND "+JUGADOR_id_fk+" =?", new String[]{id_equipo, id_jugador});
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.eliminarAsignacionJugador_Equipo", exc.getMessage());
+        }finally {
             db.endTransaction();
         }
         return toret;
@@ -241,5 +275,6 @@ public class DBManager extends SQLiteOpenHelper {
         return toret;
     }
 
+    /*¿Hace falta eliminarPuntuacion() si ya tengo ON DELETE CASCADE en la fk?*/
 
 }
