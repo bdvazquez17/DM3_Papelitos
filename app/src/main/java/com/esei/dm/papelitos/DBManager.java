@@ -31,7 +31,7 @@ public class DBManager extends SQLiteOpenHelper {
     public DBManager(Context context){
         super(context, db_name, null, db_version);
     }
-     @Override
+    @Override
     public void onCreate(SQLiteDatabase db){
         Log.i("DBManager", "Creando BBDD "+db_name+" v"+db_version);
 
@@ -51,36 +51,36 @@ public class DBManager extends SQLiteOpenHelper {
         }
 
         /*Creacion tabla Equipo*/
-         try{
-             db.beginTransaction();
-             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_equipo + "("
-                     + EQUIPO_id + " INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-                     + EQUIPO_nombre + " TEXT NOT NULL,"
-                     + JUGADOR_id_fk +" INTEGER NOT NULL , FOREIGN KEY ("+JUGADOR_id_fk+") REFERENCES " + tabla_jugador + "("+JUGADOR_id+")"
-                     + ")"
-             );
-             db.setTransactionSuccessful();
-         }catch (SQLException exec){
-             Log.e("DBManager.onCreate", "Creando "+tabla_equipo+": "+exec.getMessage());
-         }finally {
-             db.endTransaction();
-         }
+        try{
+            db.beginTransaction();
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_equipo + "("
+                    + EQUIPO_id + " INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+                    + EQUIPO_nombre + " TEXT NOT NULL,"
+                    + JUGADOR_id_fk +" INTEGER NOT NULL , FOREIGN KEY ("+JUGADOR_id_fk+") REFERENCES " + tabla_jugador + "("+JUGADOR_id+")"
+                    + ")"
+            );
+            db.setTransactionSuccessful();
+        }catch (SQLException exec){
+            Log.e("DBManager.onCreate", "Creando "+tabla_equipo+": "+exec.getMessage());
+        }finally {
+            db.endTransaction();
+        }
 
-         /*Creacion tabla Puntuacion*/
-         try{
-             db.beginTransaction();
-             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_puntuacion + "("
-                     + puntuacion + " INTEGER NOT NULL,"
-                     + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+")"
-                     + ")"
-             );
-             db.setTransactionSuccessful();
-         }catch (SQLException exec){
-             Log.e("DBManager.onCreate", "Creando "+tabla_puntuacion+": "+exec.getMessage());
-         }finally {
-             db.endTransaction();
-         }
-     }
+        /*Creacion tabla Puntuacion*/
+        try{
+            db.beginTransaction();
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_puntuacion + "("
+                    + puntuacion + " INTEGER NOT NULL DEFAULT 0,"
+                    + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+")"
+                    + ")"
+            );
+            db.setTransactionSuccessful();
+        }catch (SQLException exec){
+            Log.e("DBManager.onCreate", "Creando "+tabla_puntuacion+": "+exec.getMessage());
+        }finally {
+            db.endTransaction();
+        }
+    }
 
     public void onUpgrade(SQLiteDatabase db, int v1, int v2){
         Log.i("DBManager", "DB: "+db_name+":v "+v1+ " -> "+v2);
@@ -93,6 +93,7 @@ public class DBManager extends SQLiteOpenHelper {
         }finally {
             db.endTransaction();
         }
+        this.onCreate(db);
     }
 
     public boolean insertarJugador(String nombre){ //registrar jugador
@@ -126,7 +127,23 @@ public class DBManager extends SQLiteOpenHelper {
         return toret;
     }
 
-    public boolean insertarEquipo(String nombre_equipo){
+    public boolean eliminarJugador(String id_jugador){
+        boolean toret = false;
+        SQLiteDatabase db = this.getWritableDatabase();
+        try{
+            db.beginTransaction();
+            db.delete(tabla_jugador, JUGADOR_id + "=?", new String[]{id_jugador});
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.eliminarJugador", exc.getMessage());
+        }finally {
+            db.endTransaction();
+        }
+        return toret;
+    }
+
+    public boolean insertarEquipo(String nombre_equipo){ /*Registrar equipo*/
         boolean toret = false;
         Cursor cursor = null;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -157,11 +174,70 @@ public class DBManager extends SQLiteOpenHelper {
         return toret;
     }
 
-    public boolean asignarJugador_Equipo(String nombre, String nombre_equipo){
+
+    public boolean asignarJugador_Equipo(String id_jugador, String id_equipo){/*jugador X -> Y equipo*/
         boolean toret = false;
         Cursor cursor = null;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
+
+        values.put(EQUIPO_id, id_equipo);
+        values.put(JUGADOR_id_fk, id_jugador);
+
+        try{
+            db.beginTransaction();
+            cursor = db.query(tabla_equipo, null, EQUIPO_id + "=? AND " + JUGADOR_id_fk
+                    + "=?", new String[]{id_equipo, id_jugador}, null, null, null, null);
+            if(cursor.getCount() > 0){
+                db.update(tabla_equipo, values, EQUIPO_id + "=? AND " + JUGADOR_id_fk
+                        + "=?", new String[]{id_equipo, id_jugador});
+            }
+            else{
+                db.insert(tabla_equipo, null, values);
+            }
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.asignarJugador_Equipo", exc.getMessage());
+        }finally {
+            if(cursor != null){
+                cursor.close();
+            }
+            db.endTransaction();
+        }
+        return toret;
+    }
+
+    public boolean modificarPuntuacion(String id_equipo, int puntos){/*Actualizar la puntuacion*/
+        boolean toret = false;
+        Cursor cursor = null;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(EQUIPO_id_fk, id_equipo);
+        values.put(puntuacion, puntos);
+
+        try{
+            db.beginTransaction();
+            cursor = db.query(tabla_puntuacion, new String[]{puntuacion} , EQUIPO_id_fk + "=?",
+                    new String[]{id_equipo}, null, null, null, null);
+            int aux = cursor.getColumnIndex(puntuacion);
+            int punt_Act = cursor.getInt(aux);
+            int nueva_puntuacion = punt_Act + puntos;
+            db.execSQL("UPDATE tabla_puntuacion " +
+                    "SET " +puntuacion+ "=?"+
+                    "WHERE "+EQUIPO_id_fk+"=?",
+                    new String[]{String.valueOf(nueva_puntuacion), id_equipo});
+            db.setTransactionSuccessful();
+            toret = true;
+        }catch(SQLException exc){
+            Log.e("DBManager.modificarPuntuacion", exc.getMessage());
+        }finally {
+            if(cursor != null){
+                cursor.close();
+            }
+            db.endTransaction();
+        }
         return toret;
     }
 
