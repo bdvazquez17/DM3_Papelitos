@@ -73,7 +73,7 @@ public class DBManager extends SQLiteOpenHelper {
             db.beginTransaction();
             db.execSQL("CREATE TABLE IF NOT EXISTS " + tabla_puntuacion + "("
                     + puntuacion + " INTEGER NOT NULL DEFAULT 0,"
-                    + EQUIPO_id_fk +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+") ON DELETE CASCADE"
+                    + EQUIPO_id_fk2 +" INTEGER NOT NULL, FOREIGN KEY ("+EQUIPO_id_fk2+") REFERENCES " + tabla_equipo + "("+EQUIPO_id+") ON DELETE CASCADE"
                     + ")"
             );
             db.setTransactionSuccessful();
@@ -248,19 +248,19 @@ public class DBManager extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(EQUIPO_id_fk, id_equipo);
+        values.put(EQUIPO_id_fk2, id_equipo);
         values.put(puntuacion, puntos);
 
         try{
             db.beginTransaction();
-            cursor = db.query(tabla_puntuacion, new String[]{puntuacion} , EQUIPO_id_fk + "=?",
+            cursor = db.query(tabla_puntuacion, new String[]{puntuacion} , EQUIPO_id_fk2 + "=?",
                     new String[]{id_equipo}, null, null, null, null);
             int aux = cursor.getColumnIndex(puntuacion);
             int punt_Act = cursor.getInt(aux);
             int nueva_puntuacion = punt_Act + puntos;
             db.execSQL("UPDATE tabla_puntuacion " +
                     "SET " +puntuacion+ "=?"+
-                    "WHERE "+EQUIPO_id_fk+"=?",
+                    "WHERE "+EQUIPO_id_fk2+"=?",
                     new String[]{String.valueOf(nueva_puntuacion), id_equipo});
             db.setTransactionSuccessful();
             toret = true;
